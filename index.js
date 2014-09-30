@@ -43,6 +43,19 @@ exports.locals = function () {
     return locals;
 };
 
-exports.symblinks = function() {
-
-}
+/**
+ * returns shell command for creating symbolic links from src to dest. pre and suf are used to
+ * build the link name
+ * @param src
+ * @param dest
+ * @param pre
+ * @param suf
+ */
+exports.cmdln = function (src, dest, pre, suf) {
+    var cmd = 'for dir in ' + src + '/*; do rm -rf ' + dest + '/'
+        + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + ';';
+    cmd += 'ln -s ' + src + '/$(basename "$dir") ' + dest + '/'
+        + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + '; done;\n';
+    debug('symblink command src : %s, dest : %s, pre : %s, suf : %s > %s', src, dest, pre, suf, cmd);
+    return cmd;
+};
