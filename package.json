@@ -6,7 +6,9 @@
         "name": "serandives",
         "email": "serandives@gmail.com"
     },
-    "dependencies": {},
+    "dependencies": {
+        "debug":"*"
+    },
     "repository": {
         "type": "git",
         "url": "git://github.com/serandules/utils.git"
