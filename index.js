@@ -36,7 +36,7 @@ exports.module = function (repo) {
 /**
  * local git repository location. this will be used to create symblinks
  */
-var locals = process.env.LOCAL_REPO || '/Users/ruchira/sources/github';
+var locals = process.env.LOCAL_REPO;
 debug('using local git repo : %s', locals);
 
 exports.locals = function () {
