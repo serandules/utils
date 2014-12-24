@@ -61,5 +61,5 @@ exports.cmdln = function (src, dest, pre, suf) {
 };
 
 exports.cmdclnln = function (src) {
-    return 'find ' + (src || '.') + ' -type l -delete';
+    return 'find ' + (src || '.') + ' -type l -delete\n';
 };
