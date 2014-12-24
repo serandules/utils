@@ -55,7 +55,11 @@ exports.cmdln = function (src, dest, pre, suf) {
     var cmd = 'for dir in ' + src + '/*; do rm -rf ' + dest + '/'
         + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + ';';
     cmd += 'ln -s ' + src + '/$(basename "$dir") ' + dest + '/'
-        + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + '; done;\n';
+    + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + '; done;\n';
     debug('symblink command src : %s, dest : %s, pre : %s, suf : %s > %s', src, dest, pre, suf, cmd);
     return cmd;
+};
+
+exports.cmdclnln = function (src) {
+    return 'find ' + (src || '.') + ' -type l -delete';
 };
