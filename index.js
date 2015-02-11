@@ -63,3 +63,15 @@ exports.cmdln = function (src, dest, pre, suf) {
 exports.cmdclnln = function (src) {
     return 'find ' + (src || '.') + ' -type l -delete\n';
 };
+
+var token;
+exports.token = function() {
+    if(token) {
+        return token;
+    }
+    token = process.env.CLIENT_TOKEN;
+    if(!token) {
+        throw 'hub token cannot be found. Please specify it with CLIENT_TOKEN property';
+    }
+    return token;
+};
