@@ -1,9 +1,11 @@
-var debug = require('debug')('utils');
+var log = require('logger')('utils');
 
 exports.merge = function (a, b) {
     if (a && b) {
         for (var key in b) {
-            a[key] = a[key] || b[key];
+            if (b.hasOwnProperty(key)) {
+                a[key] = a[key] || b[key];
+            }
         }
     }
     return a;
@@ -14,7 +16,7 @@ exports.merge = function (a, b) {
  * @returns {boolean}
  */
 var prod = (process.env.NODE_ENV === 'production');
-debug('node environment production : %s', prod);
+log.debug('node environment production : %s', prod);
 
 exports.prod = function () {
     return prod;
@@ -29,7 +31,7 @@ exports.module = function (repo) {
     var idx = repo.lastIndexOf('/');
     repo = repo.substring(idx + 1);
     var module = repo.substring(0, repo.indexOf('.'));
-    debug('module name from repo %s : %s', repo, module);
+    log.debug('module name from repo %s : %s', repo, module);
     return module;
 };
 
@@ -37,7 +39,7 @@ exports.module = function (repo) {
  * local git repository location. this will be used to create symblinks
  */
 var locals = process.env.LOCAL_REPO;
-debug('using local git repo : %s', locals);
+log.debug('using local git repo : %s', locals);
 
 exports.locals = function () {
     return locals;
@@ -56,7 +58,7 @@ exports.cmdln = function (src, dest, pre, suf) {
         + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + ';';
     cmd += 'ln -s ' + src + '/$(basename "$dir") ' + dest + '/'
     + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + '; done;\n';
-    debug('symblink command src : %s, dest : %s, pre : %s, suf : %s > %s', src, dest, pre, suf, cmd);
+    log.debug('symblink command src : %s, dest : %s, pre : %s, suf : %s > %s', src, dest, pre, suf, cmd);
     return cmd;
 };
 
