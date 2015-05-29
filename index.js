@@ -15,7 +15,7 @@ exports.merge = function (a, b) {
  * check whether app runs in production mode
  * @returns {boolean}
  */
-var prod = (process.env.NODE_ENV === 'production');
+var prod = process.env.PRODUCTION;
 log.debug('node environment production : %s', prod);
 
 exports.prod = function () {
