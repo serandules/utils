@@ -1,5 +1,9 @@
 var log = require('logger')('utils');
 
+exports.none = function () {
+
+};
+
 exports.merge = function (a, b) {
     if (a && b) {
         for (var key in b) {
