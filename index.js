@@ -1,4 +1,5 @@
 var log = require('logger')('utils');
+var AWS = require('aws-sdk');
 
 exports.none = function () {
 
@@ -61,7 +62,7 @@ exports.cmdln = function (src, dest, pre, suf) {
     var cmd = 'for dir in ' + src + '/*; do rm -rf ' + dest + '/'
         + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + ';';
     cmd += 'ln -s ' + src + '/$(basename "$dir") ' + dest + '/'
-    + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + '; done;\n';
+        + (pre ? pre : '') + '$(basename "$dir")' + (suf ? suf : '') + '; done;\n';
     log.debug('symblink command src : %s, dest : %s, pre : %s, suf : %s > %s', src, dest, pre, suf, cmd);
     return cmd;
 };
@@ -80,4 +81,17 @@ exports.token = function () {
         throw 'hub token cannot be found. Please specify it with CLIENT_TOKEN property';
     }
     return token;
+};
+
+var s3;
+exports.s3 = function () {
+    if (s3) {
+        return s3;
+    }
+    AWS.config.update({
+        accessKeyId: process.env.AWS_KEY,
+        secretAccessKey: process.env.AWS_SECRET,
+        region: process.env.AWS_REGION || 'ap-southeast-1'
+    });
+    return s3 = new AWS.S3();
 };
