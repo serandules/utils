@@ -95,3 +95,27 @@ exports.s3 = function () {
     });
     return s3 = new AWS.S3();
 };
+
+exports.resolve = function (url) {
+    var protocol = url.match(/.*?:\/\//g);
+    if (!protocol.length) {
+        return url;
+    }
+    protocol = protocol[0];
+    if (protocol === 'https://' || protocol === 'http://') {
+        return url;
+    }
+    var prefix = 'https://';
+    var env = process.env.NODE_ENV;
+    if (env === 'development') {
+        prefix += 'dev';
+    }
+    var suffix = url.substring(protocol.length);
+    if (protocol === 'accounts://') {
+        return prefix + 'accounts.' + suffix;
+    }
+    if (protocol === 'autos://') {
+        return prefix + 'autos.' + suffix;
+    }
+    return url;
+};
