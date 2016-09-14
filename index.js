@@ -1,5 +1,8 @@
 var log = require('logger')('utils');
+var nconf = require('nconf');
 var AWS = require('aws-sdk');
+
+var server = nconf.get('SERVER');
 
 exports.none = function () {
 
@@ -98,24 +101,14 @@ exports.s3 = function () {
 
 exports.resolve = function (url) {
     var protocol = url.match(/.*?:\/\//g);
-    if (!protocol.length) {
+    if (!protocol) {
         return url;
     }
     protocol = protocol[0];
     if (protocol === 'https://' || protocol === 'http://') {
         return url;
     }
-    var prefix = 'https://';
-    var env = process.env.NODE_ENV;
-    if (env === 'development') {
-        prefix += 'dev';
-    }
+    var sub = protocol.replace('://', '');
     var suffix = url.substring(protocol.length);
-    if (protocol === 'accounts://') {
-        return prefix + 'accounts.' + suffix;
-    }
-    if (protocol === 'autos://') {
-        return prefix + 'autos.' + suffix;
-    }
-    return url;
+    return server.replace('{sub}', sub) + '/' + suffix;
 };
