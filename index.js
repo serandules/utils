@@ -2,7 +2,7 @@ var log = require('logger')('utils');
 var nconf = require('nconf');
 var AWS = require('aws-sdk');
 
-var server = nconf.get('SERVER');
+var server = nconf.get('server');
 
 exports.none = function () {
 
