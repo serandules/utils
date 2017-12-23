@@ -21,17 +21,15 @@ exports.merge = function (a, b) {
     return a;
 };
 
-var s3;
+var config = new AWS.Config({
+    accessKeyId: nconf.get('AWS_KEY'),
+    secretAccessKey: nconf.get('AWS_SECRET')
+});
+
+var s3 = new AWS.S3(config);
+
 exports.s3 = function () {
-    if (s3) {
-        return s3;
-    }
-    AWS.config.update({
-        accessKeyId: process.env.AWS_KEY,
-        secretAccessKey: process.env.AWS_SECRET,
-        region: process.env.AWS_REGION || 'ap-southeast-1'
-    });
-    return s3 = new AWS.S3();
+    return s3;
 };
 
 exports.resolve = function (url) {
