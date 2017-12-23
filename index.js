@@ -47,5 +47,5 @@ exports.resolve = function (url) {
 };
 
 exports.bucket = function (name) {
-    return env === 'production' ? env : env + '.' + name;
+    return env === 'production' ? name : env + '.' + name;
 };
