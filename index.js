@@ -2,12 +2,14 @@ var log = require('logger')('utils');
 var nconf = require('nconf');
 var AWS = require('aws-sdk');
 
-var server = nconf.get('SERVER');
-
 var env = nconf.get('ENV');
 
 exports.none = function () {
 
+};
+
+exports.env = function () {
+    return env;
 };
 
 exports.merge = function (a, b) {
@@ -41,6 +43,8 @@ exports.resolve = function (url) {
     if (protocol === 'https://' || protocol === 'http://') {
         return url;
     }
+
+    var server = nconf.get('SERVER');
     var sub = protocol.replace('://', '');
     var suffix = url.substring(protocol.length);
     return server.replace('{sub}', sub) + '/' + suffix;
