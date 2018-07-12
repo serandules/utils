@@ -9,6 +9,7 @@
   "dependencies": {
     "aws-sdk": "2.175.0",
     "request": "2.74.0",
+    "ioredis": "3.2.2",
     "logger": "serandules/logger#master"
   },
   "repository": {

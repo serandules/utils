@@ -1,8 +1,11 @@
 var log = require('logger')('utils');
 var nconf = require('nconf');
 var AWS = require('aws-sdk');
+var Redis = require('ioredis');
 
 var env = nconf.get('ENV');
+
+var redis;
 
 exports.none = function () {
 
@@ -53,3 +56,11 @@ exports.resolve = function (url) {
 exports.bucket = function (name) {
     return env === 'production' ? name : env + '.' + name;
 };
+
+exports.redis = function () {
+  if (redis) {
+    return redis;
+  }
+  redis = new Redis(nconf.get('REDIS_URI'));
+  return redis;
+}
