@@ -2,10 +2,13 @@ var log = require('logger')('utils');
 var nconf = require('nconf');
 var AWS = require('aws-sdk');
 var Redis = require('ioredis');
+var format = require('string-template');
 
 var env = nconf.get('ENV');
 
 var redis;
+
+var serverUrl;
 
 exports.none = function () {
 
@@ -46,11 +49,10 @@ exports.resolve = function (url) {
     if (protocol === 'https://' || protocol === 'http://') {
         return url;
     }
-
-    var server = nconf.get('SERVER');
+    var serverUrl = exports.serverUrl();
     var sub = protocol.replace('://', '');
     var suffix = url.substring(protocol.length);
-    return server.replace('{sub}', sub) + '/' + suffix;
+    return format(serverUrl, {sub: sub}) + '/' + suffix;
 };
 
 exports.bucket = function (name) {
@@ -63,4 +65,14 @@ exports.redis = function () {
   }
   redis = new Redis(nconf.get('REDIS_URI'));
   return redis;
+}
+
+exports.serverUrl = function () {
+  if (serverUrl) {
+    return serverUrl;
+  }
+  serverUrl = nconf.get('SERVER_SSL') ? 'https' : 'http';
+  serverUrl += '://' + nconf.get('SERVER_HOST');
+  serverUrl += ':' + (nconf.get('SERVER_PORT') || nconf.get('PORT'));
+  return serverUrl;
 }
