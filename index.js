@@ -73,6 +73,7 @@ exports.serverUrl = function () {
   }
   serverUrl = nconf.get('SERVER_SSL') ? 'https' : 'http';
   serverUrl += '://' + nconf.get('SERVER_HOST');
-  serverUrl += ':' + (nconf.get('SERVER_PORT') || nconf.get('PORT'));
+  var port = nconf.get('SERVER_PORT') || nconf.get('PORT');
+  serverUrl += (port === 80 || port === 443) ? '' : ':' + port;
   return serverUrl;
 }
