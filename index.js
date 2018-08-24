@@ -52,7 +52,7 @@ exports.resolve = function (url) {
     var serverUrl = exports.serverUrl();
     var sub = protocol.replace('://', '');
     var suffix = url.substring(protocol.length);
-    return format(serverUrl, {sub: sub}) + '/' + suffix;
+    return format(serverUrl, {sub: sub}) + suffix;
 };
 
 exports.bucket = function (name) {
