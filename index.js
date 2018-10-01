@@ -65,7 +65,7 @@ exports.redis = function () {
   }
   redis = new Redis(nconf.get('REDIS_URI'));
   return redis;
-}
+};
 
 exports.serverUrl = function () {
   if (serverUrl) {
@@ -76,4 +76,4 @@ exports.serverUrl = function () {
   var port = nconf.get('SERVER_PORT') || nconf.get('PORT');
   serverUrl += (port === '80' || port === '443') ? '' : ':' + port;
   return serverUrl;
-}
+};
