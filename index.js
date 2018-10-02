@@ -1,10 +1,13 @@
 var log = require('logger')('utils');
 var nconf = require('nconf');
+var bcrypt = require('bcrypt');
 var AWS = require('aws-sdk');
 var Redis = require('ioredis');
 var format = require('string-template');
 
 var env = nconf.get('ENV');
+
+var SALT_WORK_FACTOR = 10;
 
 var redis;
 
@@ -76,4 +79,18 @@ exports.serverUrl = function () {
   var port = nconf.get('SERVER_PORT') || nconf.get('PORT');
   serverUrl += (port === '80' || port === '443') ? '' : ':' + port;
   return serverUrl;
+};
+
+exports.encrypt = function (value, done) {
+  bcrypt.genSalt(SALT_WORK_FACTOR, function (err, salt) {
+    if (err) {
+      return done(err);
+    }
+    bcrypt.hash(value, salt, function (err, hash) {
+      if (err) {
+        return done(err);
+      }
+      done(null, hash);
+    });
+  });
 };
