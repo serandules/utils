@@ -18,18 +18,26 @@ exports.none = function () {
 };
 
 exports.env = function () {
-    return env;
+  return env;
+};
+
+exports.space = function () {
+  return nconf.get('SPACE');
+};
+
+exports.root = function () {
+  return 'admin@' + exports.space();
 };
 
 exports.merge = function (a, b) {
-    if (a && b) {
-        for (var key in b) {
-            if (b.hasOwnProperty(key)) {
-                a[key] = a[key] || b[key];
-            }
-        }
+  if (a && b) {
+    for (var key in b) {
+      if (b.hasOwnProperty(key)) {
+        a[key] = a[key] || b[key];
+      }
     }
-    return a;
+  }
+  return a;
 };
 
 var config = new AWS.Config({
@@ -44,22 +52,22 @@ exports.s3 = function () {
 };
 
 exports.resolve = function (url) {
-    var protocol = url.match(/.*?:\/\//g);
-    if (!protocol) {
-        return url;
-    }
-    protocol = protocol[0];
-    if (protocol === 'https://' || protocol === 'http://') {
-        return url;
-    }
-    var serverUrl = exports.serverUrl();
-    var sub = protocol.replace('://', '');
-    var suffix = url.substring(protocol.length);
-    return format(serverUrl, {sub: sub}) + suffix;
+  var protocol = url.match(/.*?:\/\//g);
+  if (!protocol) {
+    return url;
+  }
+  protocol = protocol[0];
+  if (protocol === 'https://' || protocol === 'http://') {
+    return url;
+  }
+  var serverUrl = exports.serverUrl();
+  var sub = protocol.replace('://', '');
+  var suffix = url.substring(protocol.length);
+  return format(serverUrl, {sub: sub}) + suffix;
 };
 
 exports.bucket = function (name) {
-    return env === 'production' ? name : env + '.' + name;
+  return env === 'production' ? name : env + '.' + name;
 };
 
 exports.redis = function () {
