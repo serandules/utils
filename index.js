@@ -102,3 +102,10 @@ exports.encrypt = function (value, done) {
     });
   });
 };
+
+exports.compare = function (left, right, done) {
+  if (!left || !right) {
+    return done(null, false);
+  }
+  bcrypt.compare(left, right, done);
+};
