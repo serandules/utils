@@ -10,6 +10,7 @@
     "aws-sdk": "2.175.0",
     "request": "2.81.0",
     "ioredis": "3.2.2",
+    "bcrypt": "2.0.1",
     "string-template": "1.0.0",
     "logger": "serandules/logger#master"
   },
