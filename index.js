@@ -41,14 +41,31 @@ exports.merge = function (a, b) {
 };
 
 var config = new AWS.Config({
-    accessKeyId: nconf.get('AWS_KEY'),
-    secretAccessKey: nconf.get('AWS_SECRET')
+  apiVersion: '2006-03-01',
+  accessKeyId: nconf.get('AWS_KEY'),
+  secretAccessKey: nconf.get('AWS_SECRET')
 });
 
-var s3 = new AWS.S3(config);
+var s3 = new AWS.S3({
+  region: 'ap-southeast-1',
+  apiVersion: '2006-03-01',
+  accessKeyId: nconf.get('AWS_KEY'),
+  secretAccessKey: nconf.get('AWS_SECRET')
+});
+
+var ses = new AWS.SES({
+  region: 'eu-west-1',
+  apiVersion: '2010-12-01',
+  accessKeyId: nconf.get('AWS_KEY'),
+  secretAccessKey: nconf.get('AWS_SECRET')
+});
 
 exports.s3 = function () {
-    return s3;
+  return s3;
+};
+
+exports.ses = function () {
+  return ses;
 };
 
 exports.resolve = function (url) {
