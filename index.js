@@ -50,12 +50,6 @@ exports.merge = function (a, b) {
   return a;
 };
 
-var config = new AWS.Config({
-  apiVersion: '2006-03-01',
-  accessKeyId: nconf.get('AWS_KEY'),
-  secretAccessKey: nconf.get('AWS_SECRET')
-});
-
 var s3 = new AWS.S3({
   region: 'ap-southeast-1',
   apiVersion: '2006-03-01',
@@ -222,9 +216,15 @@ exports.visibles = function (ctx, o, done) {
     if (err) {
       return done(err);
     }
+    var restricted = {
+      id: o.id
+    };
     var user = exports.json(ctx.user);
     var groups = user ? user.groups : [anon.id];
     var visibility = ctx.found ? ctx.found.visibility : o.visibility;
+    if (!visibility || !visibility['*']) {
+      return restricted;
+    }
     var allGroups = visibility['*'].groups || [];
     var all = groups.some(function (group) {
       return allGroups.indexOf(group) !== -1
@@ -236,9 +236,6 @@ exports.visibles = function (ctx, o, done) {
     if (user && allUsers.indexOf(user.id) !== -1) {
       return done(null, o);
     }
-    var visibles = {
-      id: o.id
-    };
     var fields = Object.keys(o);
     fields.forEach(function (field) {
       var allowed = visibility[field];
@@ -246,7 +243,7 @@ exports.visibles = function (ctx, o, done) {
         return;
       }
       if (user && allowed.users && allowed.users.indexOf(user.id) !== -1) {
-        return visibles[field] = o[field];
+        return restricted[field] = o[field];
       }
       if (!allowed.groups) {
         return;
@@ -255,13 +252,80 @@ exports.visibles = function (ctx, o, done) {
         return allowed.groups.indexOf(group) !== -1;
       });
       if (can) {
-        visibles[field] = o[field];
+        restricted[field] = o[field];
       }
     });
-    done(null, visibles);
+    done(null, restricted);
   });
 };
 
 exports.json = function (o) {
   return o ? JSON.parse(JSON.stringify(o)) : null;
+};
+
+exports.permit = function (o, type, id, actions) {
+  actions = Array.isArray(actions) ? actions : [actions];
+  var permissions = o.permissions || [];
+  var found = permissions.some(function (entry) {
+    if (entry[type] !== id) {
+      return false;
+    }
+    var actionz = entry.actions;
+    entry.actions = _.union(actionz, actions);
+    return true;
+  });
+  if (found) {
+    return o;
+  }
+  var entry = {
+    actions: actions
+  };
+  entry[type] = id;
+  permissions.push(entry);
+  return o;
+};
+
+exports.deny = function (o, type, id, actions) {
+  actions = Array.isArray(actions) ? actions : [actions];
+  var permissions = o.permissions || [];
+  permissions.some(function (entry) {
+    if (entry[type] !== id) {
+      return false;
+    }
+    var actionz = entry.actions;
+    entry.actions = _.difference(actionz, actions);
+    return true;
+  });
+  return o;
+};
+
+exports.visible = function (o, type, id, fields) {
+  fields = Array.isArray(fields) ? fields : [fields];
+  fields.forEach(function (field) {
+    var visibility = o.visibility || {};
+    var entry = visibility[field] || (visibility[field] = {});
+    var values = entry[type] || (entry[type] = []);
+    entry[type] = _.union(values, [id]);
+  });
+  return o;
+};
+
+exports.invisible = function (o, type, id, fields) {
+  fields = Array.isArray(fields) ? fields : [fields];
+  fields.forEach(function (field) {
+    var visibility = o.visibility;
+    if (!visibility) {
+      return;
+    }
+    var entry = visibility[field];
+    if (!entry) {
+      return;
+    }
+    var values = entry[type];
+    if (!values) {
+      return;
+    }
+    entry[type] = _.difference(values, [id]);
+  });
+  return o;
 };
