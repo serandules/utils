@@ -222,17 +222,18 @@ exports.visibles = function (ctx, o, done) {
     var user = exports.json(ctx.user);
     var groups = user ? user.groups : [anon.id];
     var visibility = ctx.found ? ctx.found.visibility : o.visibility;
-    if (!visibility || !visibility['*']) {
+    if (!visibility) {
       return restricted;
     }
-    var allGroups = visibility['*'].groups || [];
+    var unbound = visibility['*'] || {};
+    var allGroups = unbound.groups || [];
     var all = groups.some(function (group) {
       return allGroups.indexOf(group) !== -1
     });
     if (all) {
       return done(null, o);
     }
-    var allUsers = visibility['*'].users || [];
+    var allUsers = unbound.users || [];
     if (user && allUsers.indexOf(user.id) !== -1) {
       return done(null, o);
     }
