@@ -1,6 +1,7 @@
 var log = require('logger')('utils');
 var nconf = require('nconf');
 var bcrypt = require('bcrypt');
+var async = require('async');
 var AWS = require('aws-sdk');
 var Redis = require('ioredis');
 var mongoose = require('mongoose');
@@ -16,6 +17,8 @@ var adminEmail = 'admin@serandives.com';
 var users = {};
 
 var groups = {};
+
+var workflows = {};
 
 var tiers = {};
 
@@ -162,6 +165,31 @@ exports.findGroup = function (user, name, done) {
   });
 };
 
+exports.findWorkflow = function (user, name, done) {
+  var o = workflows[user] || (workflows[user] = {});
+  var workflow = o[name];
+  if (workflow) {
+    return done(null, workflow);
+  }
+  var Workflows = mongoose.model('workflows');
+  Workflows.findOne({user: user, name: name}, function (err, workflow) {
+    if (err) {
+      return done(err)
+    }
+    o[name] = workflow;
+    done(null, workflow);
+  });
+};
+
+exports.workflow = function (name, done) {
+  exports.findUser(adminEmail, function (err, user) {
+    if (err) {
+      return done(err);
+    }
+    exports.findWorkflow(user, name, done);
+  });
+};
+
 exports.group = function (name, done) {
   exports.findUser(adminEmail, function (err, user) {
     if (err) {
@@ -286,6 +314,40 @@ exports.permit = function (o, type, id, actions) {
   return o;
 };
 
+exports.permitted = function (user, o, action) {
+  var groups = user.groups;
+  var permissions = o.permissions || [];
+  var allowed = {
+    groups: [],
+    users: []
+  };
+  permissions.forEach(function (perm) {
+    var actions = perm.actions || [];
+    if (actions.indexOf(action) === -1 && actions.indexOf('*') === -1) {
+      return;
+    }
+    if (perm.group) {
+      return allowed.groups.push(perm.group);
+    }
+    if (perm.user) {
+      return allowed.users.push(perm.user);
+    }
+  });
+  if (allowed.users.indexOf(user.id) !== -1) {
+    return true;
+  }
+  var i;
+  var group;
+  var length = groups.length;
+  for (i = 0; i < length; i++) {
+    group = groups[i];
+    if (allowed.groups.indexOf(group) !== -1) {
+      return true;
+    }
+  }
+  return false;
+};
+
 exports.deny = function (o, type, id, actions) {
   actions = Array.isArray(actions) ? actions : [actions];
   var permissions = o.permissions || [];
@@ -329,4 +391,67 @@ exports.invisible = function (o, type, id, fields) {
     entry[type] = _.difference(values, [id]);
   });
   return o;
+};
+
+exports.toPermissions = function (user, permit, done) {
+  var permissions = [];
+  var groups = permit.groups;
+  async.each(Object.keys(groups), function (name, eachLimit) {
+    var actions = groups[name].actions;
+    exports.group(name, function (err, group) {
+      if (err) {
+        return eachLimit(err);
+      }
+      permissions.push({
+        group: group.id,
+        actions: actions
+      });
+      eachLimit();
+    });
+  }, function (err) {
+    if (err) {
+      return done(err);
+    }
+    if (!user) {
+      return done(null, permissions);
+    }
+    permissions.push({
+      user: user,
+      actions: permit.user.actions
+    });
+    done(null, permissions);
+  });
+};
+
+exports.toVisibility = function (user, permit, done) {
+  var visibility = {};
+  var add = function (type, id, fields) {
+    fields.forEach(function (field) {
+      var entry = visibility[field] || (visibility[field] = {
+        users: [],
+        groups: []
+      });
+      entry[type].push(id);
+    });
+  };
+  var groups = permit.groups;
+  async.each(Object.keys(groups), function (name, eachLimit) {
+    var visibles = groups[name].visibility;
+    exports.group(name, function (err, group) {
+      if (err) {
+        return eachLimit(err);
+      }
+      add('groups', group.id, visibles);
+      eachLimit();
+    });
+  }, function (err) {
+    if (err) {
+      return done(err);
+    }
+    if (!user) {
+      return done(null, visibility);
+    }
+    add('users', user, permit.user.visibility);
+    done(null, visibility);
+  });
 };
