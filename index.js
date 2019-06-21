@@ -4,6 +4,7 @@ var bcrypt = require('bcrypt');
 var async = require('async');
 var AWS = require('aws-sdk');
 var Redis = require('ioredis');
+var errors = require('errors');
 var mongoose = require('mongoose');
 var _ = require('lodash');
 var format = require('string-template');
@@ -453,5 +454,63 @@ exports.toVisibility = function (user, permit, done) {
     }
     add('users', user, permit.user.visibility);
     done(null, visibility);
+  });
+};
+
+exports.transit = function (o, done) {
+  var id = o.id;
+  var action = o.action;
+  var user = o.user;
+  var model = o.model;
+  var workflow = o.workflow;
+  model.findOne({_id: id}, function (err, found) {
+    if (err) {
+      return done(err);
+    }
+    if (!found) {
+      return done(errors.notFound());
+    }
+    var from = found.status;
+    if (!from) {
+      return done(errors.unauthorized());
+    }
+    found = exports.json(found);
+    if (!exports.permitted(exports.json(user), found, action)) {
+      return done(errors.unauthorized())
+    }
+    exports.workflow(workflow, function (err, workflow) {
+      if (err) {
+        return done(err);
+      }
+      if (!workflow) {
+        return done(new Error('!workflow'));
+      }
+      var transitions = workflow.transitions;
+      var actions = transitions[from];
+      if (!actions) {
+        return done(errors.unauthorized());
+      }
+      var to = actions[action];
+      if (!to) {
+        return done(errors.unauthorized());
+      }
+      var permit = workflow.permits[to];
+      var usr = found ? found.user : user.id;
+      exports.toPermissions(usr, permit, function (err, permissions) {
+        if (err) {
+          return done(err);
+        }
+        exports.toVisibility(user, permit, function (err, visibility) {
+          if (err) {
+            return done(err);
+          }
+          model.findOneAndUpdate({_id: id}, {
+            status: to,
+            permissions: permissions,
+            visibility: visibility
+          }, done);
+        });
+      });
+    });
   });
 };
