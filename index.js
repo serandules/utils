@@ -500,7 +500,7 @@ exports.transit = function (o, done) {
         if (err) {
           return done(err);
         }
-        exports.toVisibility(user, permit, function (err, visibility) {
+        exports.toVisibility(usr, permit, function (err, visibility) {
           if (err) {
             return done(err);
           }
