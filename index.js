@@ -9,6 +9,8 @@ var mongoose = require('mongoose');
 var _ = require('lodash');
 var format = require('string-template');
 
+var Workflows = require('model-workflows');
+
 var env = nconf.get('ENV');
 
 var SALT_WORK_FACTOR = 10;
@@ -172,7 +174,6 @@ exports.findWorkflow = function (user, name, done) {
   if (workflow) {
     return done(null, workflow);
   }
-  var Workflows = mongoose.model('workflows');
   Workflows.findOne({user: user, name: name}, function (err, workflow) {
     if (err) {
       return done(err)
