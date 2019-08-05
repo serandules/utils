@@ -63,6 +63,13 @@ var s3 = new AWS.S3({
   secretAccessKey: nconf.get('AWS_SECRET')
 });
 
+var sqs = new AWS.SQS({
+  region: 'ap-southeast-1',
+  apiVersion: '2012-11-05',
+  accessKeyId: nconf.get('AWS_KEY'),
+  secretAccessKey: nconf.get('AWS_SECRET')
+});
+
 var ses = new AWS.SES({
   region: 'eu-west-1',
   apiVersion: '2010-12-01',
@@ -76,6 +83,10 @@ exports.s3 = function () {
 
 exports.ses = function () {
   return ses;
+};
+
+exports.sqs = function () {
+  return sqs;
 };
 
 exports.resolve = function (url) {
@@ -514,4 +525,13 @@ exports.transit = function (o, done) {
       });
     });
   });
+};
+
+exports.delayed = function () {
+  var args = Array.prototype.slice.call(arguments);
+  var delay = args.shift();
+  var done = args.shift();
+  setTimeout(function () {
+    done.apply(null, args);
+  }, delay);
 };
