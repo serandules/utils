@@ -5,7 +5,10 @@ var async = require('async');
 var AWS = require('aws-sdk');
 var Redis = require('ioredis');
 var errors = require('errors');
+var diff = require('deep-object-diff').diff;
 var mongoose = require('mongoose');
+var uuidv4 = require('uuid/v4');
+var stringify = require('json-stringify-safe');
 var _ = require('lodash');
 var format = require('string-template');
 
@@ -303,6 +306,18 @@ exports.visibles = function (ctx, o, done) {
 
 exports.json = function (o) {
   return o ? JSON.parse(JSON.stringify(o)) : null;
+};
+
+exports.stringify = function (o) {
+  return stringify(o);
+};
+
+exports.uuid = function () {
+  return uuidv4();
+};
+
+exports.diff = function (lh, rh) {
+  return diff(lh, rh);
 };
 
 exports.permit = function (o, type, id, actions) {
