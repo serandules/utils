@@ -111,6 +111,10 @@ exports.bucket = function (name) {
   return env === 'production' ? name : env + '.' + name;
 };
 
+exports.queue = function (name) {
+  return env === 'production' ? name : env + '-' + name;
+};
+
 exports.redis = function () {
   if (redis) {
     return redis;
