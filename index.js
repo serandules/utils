@@ -40,12 +40,16 @@ exports.env = function () {
   return env;
 };
 
-exports.space = function () {
-  return nconf.get('SPACE');
+exports.domain = function () {
+  return nconf.get('DOMAIN');
+};
+
+exports.subdomain = function () {
+  return nconf.get('SUBDOMAIN');
 };
 
 exports.root = function () {
-  return 'admin@' + exports.space();
+  return 'admin@' + exports.domain();
 };
 
 exports.merge = function (a, b) {
@@ -104,7 +108,9 @@ exports.resolve = function (url) {
   var serverUrl = exports.serverUrl();
   var sub = protocol.replace('://', '');
   var suffix = url.substring(protocol.length);
-  return format(serverUrl, {sub: sub}) + suffix;
+  return format(serverUrl, {
+    subdomain: sub ? sub + '.' : ''
+  }) + suffix;
 };
 
 exports.bucket = function (name) {
@@ -128,7 +134,7 @@ exports.serverUrl = function () {
     return serverUrl;
   }
   serverUrl = nconf.get('SERVER_SSL') ? 'https' : 'http';
-  serverUrl += '://' + nconf.get('SERVER_HOST');
+  serverUrl += '://' + exports.subdomain() +  exports.domain();
   var port = nconf.get('SERVER_PORT') || nconf.get('PORT');
   serverUrl += (port === '80' || port === '443') ? '' : ':' + port;
   return serverUrl;
@@ -324,6 +330,9 @@ exports.diff = function (lh, rh) {
   return diff(lh, rh);
 };
 
+exports.origin = function (url) {
+  return url.match(/^(?:https?:)?(?:\/\/)?([^\/\?]+)/img)[0];
+};
 exports.permit = function (o, type, id, actions) {
   actions = Array.isArray(actions) ? actions : [actions];
   var permissions = o.permissions || [];
