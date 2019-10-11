@@ -32,6 +32,8 @@ var redis;
 
 var serverUrl;
 
+var client;
+
 exports.none = function () {
 
 };
@@ -44,12 +46,47 @@ exports.domain = function () {
   return nconf.get('DOMAIN');
 };
 
+var cacheKey = function (key) {
+  return 'caches:' + key;
+};
+
+exports.cache = function (key, value, done) {
+  exports.redis().set(cacheKey(key), value);
+  done();
+};
+
+exports.cached = function (key, done) {
+  exports.redis().get(cacheKey(key), function (err, value) {
+    if (err) {
+      return done(err);
+    }
+    done(null, value);
+  })
+};
+
 exports.subdomain = function () {
   return nconf.get('SUBDOMAIN');
 };
 
 exports.root = function () {
   return 'admin@' + exports.domain();
+};
+
+exports.client = function (done) {
+  if (client) {
+    return done(null, client);
+  }
+  var Clients = mongoose.model('clients');
+  Clients.findOne({name: exports.domain()}).exec(function (err, c) {
+    if (err) {
+      return done(err);
+    }
+    if (!c) {
+      return done('No client with name %s can be found.', domain);
+    }
+    client = exports.json(c);
+    done(null, c);
+  });
 };
 
 exports.merge = function (a, b) {
@@ -315,7 +352,16 @@ exports.visibles = function (ctx, o, done) {
 };
 
 exports.json = function (o) {
-  return o ? JSON.parse(JSON.stringify(o)) : null;
+  if (!o) {
+    return null;
+  }
+  try {
+    o = JSON.stringify(o);
+  } catch (e) {
+    log.error('json:stringify', e);
+    return null
+  }
+  return JSON.parse(o);
 };
 
 exports.stringify = function (o) {
