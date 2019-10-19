@@ -151,11 +151,11 @@ exports.resolve = function (url) {
 };
 
 exports.bucket = function (name) {
-  return env === 'production' ? name : env + '.' + name;
+  return env === 'production' ? name : name + '-' + env;
 };
 
 exports.queue = function (name) {
-  return env === 'production' ? name : env + '-' + name;
+  return env === 'production' ? name : name + '-' + env;
 };
 
 exports.redis = function () {
