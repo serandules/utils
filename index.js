@@ -34,6 +34,23 @@ var serverUrl;
 
 var client;
 
+var modelUpdatesQueueUrl;
+
+var findModelUpdatesQueueUrl = function (done) {
+  if (modelUpdatesQueueUrl) {
+    return done(null, modelUpdatesQueueUrl);
+  }
+  exports.sqs().getQueueUrl({
+    QueueName: exports.queue('model-updates') + '.fifo'
+  }, function (err, o) {
+    if (err) {
+      return done(err);
+    }
+    modelUpdatesQueueUrl = o.QueueUrl;
+    done(null, modelUpdatesQueueUrl);
+  });
+};
+
 exports.none = function () {
 
 };
@@ -51,6 +68,10 @@ var cacheKey = function (key) {
 };
 
 exports.cache = function (key, value, done) {
+  if (!value) {
+    exports.redis().del(cacheKey(key));
+    return done();
+  }
   exports.redis().set(cacheKey(key), value);
   done();
 };
@@ -82,7 +103,7 @@ exports.client = function (done) {
       return done(err);
     }
     if (!c) {
-      return done('No client with name %s can be found.', domain);
+      return done('No client with name ' + exports.domain() + ' can be found.');
     }
     client = exports.json(c);
     done(null, c);
@@ -171,7 +192,7 @@ exports.serverUrl = function () {
     return serverUrl;
   }
   serverUrl = nconf.get('SERVER_SSL') ? 'https' : 'http';
-  serverUrl += '://' + exports.subdomain() +  exports.domain();
+  serverUrl += '://' + exports.subdomain() + exports.domain();
   var port = nconf.get('SERVER_PORT') || nconf.get('PORT');
   serverUrl += (port === '80' || port === '443') ? '' : ':' + port;
   return serverUrl;
@@ -210,6 +231,27 @@ exports.findUser = function (email, done) {
     }
     users[email] = user;
     done(null, user);
+  });
+};
+
+exports.notify = function (model, id, action, changes, done) {
+  var data = {
+    id: id,
+    action: action,
+    updated: changes,
+    model: model
+  };
+  findModelUpdatesQueueUrl(function (err, queueUrl) {
+    if (err) {
+      return done(err);
+    }
+    var mid = exports.uuid();
+    exports.sqs().sendMessage({
+      MessageBody: exports.stringify(data),
+      QueueUrl: queueUrl,
+      MessageGroupId: mid,
+      MessageDeduplicationId: mid
+    }, done);
   });
 };
 
@@ -373,7 +415,7 @@ exports.uuid = function () {
 };
 
 exports.diff = function (lh, rh) {
-  return diff(lh, rh);
+  return diff(exports.json(lh), exports.json(rh));
 };
 
 exports.origin = function (url) {
