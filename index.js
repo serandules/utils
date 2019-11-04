@@ -18,6 +18,8 @@ var env = nconf.get('ENV');
 
 var SALT_WORK_FACTOR = 10;
 
+var BUMP_UP_THRESHOLD = 14 * 24 * 60 * 60 * 1000;
+
 var adminEmail = 'admin@serandives.com';
 
 var users = {};
@@ -217,6 +219,10 @@ exports.compare = function (left, right, done) {
     return done(null, false);
   }
   bcrypt.compare(left, right, done);
+};
+
+exports.bumpable = function (o) {
+  return Date.now() - new Date(o.updatedAt) >= BUMP_UP_THRESHOLD;
 };
 
 exports.findUser = function (email, done) {
