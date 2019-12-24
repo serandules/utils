@@ -91,8 +91,16 @@ exports.subdomain = function () {
   return nconf.get('SUBDOMAIN');
 };
 
-exports.root = function () {
+exports.adminEmail = function () {
   return 'admin@' + exports.domain();
+};
+
+exports.supportEmail = function () {
+  return 'support@' + exports.domain();
+};
+
+exports.talkEmail = function () {
+  return 'talk@' + exports.domain();
 };
 
 exports.client = function (done) {
@@ -528,9 +536,31 @@ exports.invisible = function (o, type, id, fields) {
   return o;
 };
 
-exports.toPermissions = function (user, permit, done) {
+exports.toPermissions = function (user, permit, o, done) {
   var permissions = [];
   var groups = permit.groups;
+  var model = permit.model || {};
+  Object.keys(model).forEach(function (field) {
+    var value = o[field];
+    if (!value) {
+      return;
+    }
+    var p = model[field];
+    if (p.group) {
+      permissions.push({
+        group: value,
+        actions: p.group.actions
+      });
+      return;
+    }
+    if (p.user) {
+      permissions.push({
+        user: value,
+        actions: p.user.actions
+      });
+      return;
+    }
+  });
   async.each(Object.keys(groups), function (name, eachLimit) {
     var actions = groups[name].actions;
     exports.group(name, function (err, group) {
@@ -558,7 +588,7 @@ exports.toPermissions = function (user, permit, done) {
   });
 };
 
-exports.toVisibility = function (user, permit, done) {
+exports.toVisibility = function (user, permit, o, done) {
   var visibility = {};
   var add = function (type, id, fields) {
     fields.forEach(function (field) {
@@ -569,6 +599,20 @@ exports.toVisibility = function (user, permit, done) {
       entry[type].push(id);
     });
   };
+  var model = permit.model || {};
+  Object.keys(model).forEach(function (field) {
+    var value = o[field];
+    if (!value) {
+      return;
+    }
+    var p = model[field];
+    if (p.group) {
+      return add('groups', value, p.group.visibility);
+    }
+    if (p.user) {
+      return add('users', value, p.user.visibility);
+    }
+  });
   var groups = permit.groups;
   async.each(Object.keys(groups), function (name, eachLimit) {
     var visibles = groups[name].visibility;
@@ -630,11 +674,11 @@ exports.transit = function (o, done) {
       }
       var permit = workflow.permits[to];
       var usr = found ? found.user : user.id;
-      exports.toPermissions(usr, permit, function (err, permissions) {
+      exports.toPermissions(usr, permit, found, function (err, permissions) {
         if (err) {
           return done(err);
         }
-        exports.toVisibility(usr, permit, function (err, visibility) {
+        exports.toVisibility(usr, permit, found, function (err, visibility) {
           if (err) {
             return done(err);
           }
