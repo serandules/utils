@@ -152,6 +152,13 @@ var ses = new AWS.SES({
   secretAccessKey: nconf.get('AWS_SECRET')
 });
 
+var sns = new AWS.SNS({
+  region: 'ap-southeast-1',
+  apiVersion: '2010-03-31',
+  accessKeyId: nconf.get('AWS_KEY'),
+  secretAccessKey: nconf.get('AWS_SECRET')
+});
+
 exports.s3 = function () {
   return s3;
 };
@@ -162,6 +169,10 @@ exports.ses = function () {
 
 exports.sqs = function () {
   return sqs;
+};
+
+exports.sns = function () {
+  return sns;
 };
 
 exports.resolve = function (url) {
@@ -635,24 +646,58 @@ exports.toVisibility = function (user, permit, o, done) {
   });
 };
 
+var transitable = function (model, o, from, to, done) {
+  var schema = model.schema;
+  var paths = schema.paths;
+  var verified = o._ && o._.verified || {};
+  async.eachLimit(Object.keys(paths), 1, function (field, processed) {
+    var path = paths[field];
+    var options = path.options || {};
+    var verify = options.verify;
+    if (!verify) {
+      return processed();
+    }
+    if (verified[field]) {
+      return processed();
+    }
+    processed(errors.forbidden('\'' + field + '\' needs to be verified before changing the state'));
+  }, done);
+};
+
 exports.transit = function (o, done) {
   var id = o.id;
   var action = o.action;
   var user = o.user;
   var model = o.model;
   var workflow = o.workflow;
-  model.findOne({_id: id}, function (err, found) {
+
+  var allowed = function (it, from, to, next) {
+    if (!model.transitable) {
+      return transitable(model, it, from, to, next);
+    }
+    model.transitable(it, from, to, function (err, allowed) {
+      if (err) {
+        return next(err);
+      }
+      if (!allowed) {
+        return next(errors.forbidden());
+      }
+      transitable(model, it, from, to, next);
+    });
+  };
+
+  model.findOne({_id: id}, function (err, it) {
     if (err) {
       return done(err);
     }
-    if (!found) {
+    if (!it) {
       return done(errors.notFound());
     }
-    var from = found.status;
+    var from = it.status;
     if (!from) {
       return done(errors.unauthorized());
     }
-    found = exports.json(found);
+    var found = exports.json(it);
     if (!exports.permitted(exports.json(user), found, action)) {
       return done(errors.unauthorized())
     }
@@ -672,21 +717,26 @@ exports.transit = function (o, done) {
       if (!to) {
         return done(errors.unauthorized());
       }
-      var permit = workflow.permits[to];
-      var usr = found ? found.user : user.id;
-      exports.toPermissions(usr, permit, found, function (err, permissions) {
+      allowed(it, from, to, function (err) {
         if (err) {
           return done(err);
         }
-        exports.toVisibility(usr, permit, found, function (err, visibility) {
+        var permit = workflow.permits[to];
+        var usr = found ? found.user : user.id;
+        exports.toPermissions(usr, permit, found, function (err, permissions) {
           if (err) {
             return done(err);
           }
-          model.findOneAndUpdate({_id: id}, {
-            status: to,
-            permissions: permissions,
-            visibility: visibility
-          }, done);
+          exports.toVisibility(usr, permit, found, function (err, visibility) {
+            if (err) {
+              return done(err);
+            }
+            model.findOneAndUpdate({_id: id}, {
+              status: to,
+              permissions: permissions,
+              visibility: visibility
+            }, done);
+          });
         });
       });
     });
