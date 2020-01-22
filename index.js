@@ -660,6 +660,9 @@ var transitable = function (model, o, from, to, done) {
     if (verified[field]) {
       return processed();
     }
+    if (!o[field] && !options.required) {
+      return processed();
+    }
     processed(errors.forbidden('\'' + field + '\' needs to be verified before changing the state'));
   }, done);
 };
