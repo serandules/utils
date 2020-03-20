@@ -9,6 +9,7 @@
   "dependencies": {
     "aws-sdk": "2.175.0",
     "request": "2.81.0",
+    "nconf": "0.10.0",
     "ioredis": "3.2.2",
     "bcrypt": "2.0.1",
     "async": "1.*",
