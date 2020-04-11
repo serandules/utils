@@ -320,6 +320,26 @@ exports.workflow = function (name, done) {
   });
 };
 
+exports.workflowActions = function (name, done) {
+  var actions = ['*', 'read', 'update', 'delete'];
+  if (!name) {
+    return done(null, actions);
+  }
+  exports.workflow(name, function (err, workflow) {
+    if (err) {
+      return done(err);
+    }
+    if (!workflow) {
+      return done(new Error('workflow ' + workflow + ' not found'));
+    }
+    var transitions = workflow.transitions;
+    Object.keys(transitions).forEach(function (status) {
+      actions = actions.concat(Object.keys(transitions[status]));
+    });
+    done(null, actions);
+  });
+};
+
 exports.group = function (name, done) {
   exports.findUser(adminEmail, function (err, user) {
     if (err) {
@@ -446,6 +466,7 @@ exports.diff = function (lh, rh) {
 exports.origin = function (url) {
   return url.match(/^(?:https?:)?(?:\/\/)?([^\/\?]+)/img)[0];
 };
+
 exports.permit = function (o, type, id, actions) {
   actions = Array.isArray(actions) ? actions : [actions];
   var permissions = o.permissions || [];
@@ -547,8 +568,9 @@ exports.invisible = function (o, type, id, fields) {
   return o;
 };
 
-exports.toPermissions = function (user, permit, o, done) {
+exports.toPermissions = function (user, workflow, status, o, done) {
   var permissions = [];
+  var permit = workflow.permits[status];
   var groups = permit.groups;
   var model = permit.model || {};
   Object.keys(model).forEach(function (field) {
@@ -599,8 +621,10 @@ exports.toPermissions = function (user, permit, o, done) {
   });
 };
 
-exports.toVisibility = function (user, permit, o, done) {
+exports.toVisibility = function (user, workflow, status, o, done) {
   var visibility = {};
+  var permit = workflow.permits[status];
+
   var add = function (type, id, fields) {
     fields.forEach(function (field) {
       var entry = visibility[field] || (visibility[field] = {
@@ -610,6 +634,7 @@ exports.toVisibility = function (user, permit, o, done) {
       entry[type].push(id);
     });
   };
+
   var model = permit.model || {};
   Object.keys(model).forEach(function (field) {
     var value = o[field];
@@ -624,6 +649,33 @@ exports.toVisibility = function (user, permit, o, done) {
       return add('users', value, p.user.visibility);
     }
   });
+
+  var overrides = o._ && o._.visibility && o._.visibility[status];
+
+  var filter = function (group, visibles) {
+    if (group.name === 'admin') {
+      return visibles;
+    }
+    if (!overrides) {
+      return visibles;
+    }
+    var overridden = overrides[group.id];
+    if (!overridden) {
+      return [];
+    }
+    var index = {};
+    visibles.forEach(function (field) {
+      index[field] = true;
+    });
+    var allowed = [];
+    overridden.forEach(function (field) {
+      if (index[field] || index['*']) {
+        allowed.push(field);
+      }
+    });
+    return allowed;
+  };
+
   var groups = permit.groups;
   async.each(Object.keys(groups), function (name, eachLimit) {
     var visibles = groups[name].visibility;
@@ -631,7 +683,7 @@ exports.toVisibility = function (user, permit, o, done) {
       if (err) {
         return eachLimit(err);
       }
-      add('groups', group.id, visibles);
+      add('groups', group.id, filter(group, visibles));
       eachLimit();
     });
   }, function (err) {
@@ -655,6 +707,9 @@ var transitable = function (model, o, from, to, done) {
     var options = path.options || {};
     var verify = options.verify;
     if (!verify) {
+      return processed();
+    }
+    if (verify.indexOf(to) === -1) {
       return processed();
     }
     if (verified[field]) {
@@ -724,13 +779,12 @@ exports.transit = function (o, done) {
         if (err) {
           return done(err);
         }
-        var permit = workflow.permits[to];
         var usr = found ? found.user : user.id;
-        exports.toPermissions(usr, permit, found, function (err, permissions) {
+        exports.toPermissions(usr, workflow, to, found, function (err, permissions) {
           if (err) {
             return done(err);
           }
-          exports.toVisibility(usr, permit, found, function (err, visibility) {
+          exports.toVisibility(usr, workflow, to, found, function (err, visibility) {
             if (err) {
               return done(err);
             }
