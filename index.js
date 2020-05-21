@@ -188,7 +188,7 @@ exports.resolve = function (url) {
   var sub = protocol.replace('://', '');
   var suffix = url.substring(protocol.length);
   return format(serverUrl, {
-    subdomain: sub ? sub + '.' : ''
+    subdomain: sub
   }) + suffix;
 };
 
