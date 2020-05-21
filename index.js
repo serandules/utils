@@ -65,6 +65,10 @@ exports.domain = function () {
   return nconf.get('DOMAIN');
 };
 
+exports.emailDomain = function () {
+  return nconf.get('EMAIL_DOMAIN');
+};
+
 var cacheKey = function (key) {
   return 'caches:' + key;
 };
@@ -92,15 +96,15 @@ exports.subdomain = function () {
 };
 
 exports.adminEmail = function () {
-  return 'admin@' + exports.domain();
+  return 'admin@' + exports.emailDomain();
 };
 
 exports.supportEmail = function () {
-  return 'support@' + exports.domain();
+  return 'support@' + exports.emailDomain();
 };
 
 exports.talkEmail = function () {
-  return 'talk@' + exports.domain();
+  return 'talk@' + exports.emailDomain();
 };
 
 exports.client = function (done) {
@@ -213,7 +217,7 @@ exports.serverUrl = function () {
     return serverUrl;
   }
   serverUrl = nconf.get('SERVER_SSL') ? 'https' : 'http';
-  serverUrl += '://' + exports.subdomain() + exports.domain();
+  serverUrl += '://' + exports.subdomain() + '.' + exports.domain();
   var port = nconf.get('SERVER_PORT') || nconf.get('PORT');
   serverUrl += (port === '80' || port === '443') ? '' : ':' + port;
   return serverUrl;
