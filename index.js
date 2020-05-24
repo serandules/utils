@@ -197,11 +197,11 @@ exports.resolve = function (url) {
 };
 
 exports.bucket = function (name) {
-  return env === 'production' ? name : name + '-' + env;
+  return nconf.get('S3_BUCKET_' + name.replace(/-/ig, '_').toUpperCase());
 };
 
 exports.queue = function (name) {
-  return env === 'production' ? name : name + '-' + env;
+  return nconf.get('SQS_QUEUE_' + name.replace(/-/ig, '_').toUpperCase());
 };
 
 exports.redis = function () {
