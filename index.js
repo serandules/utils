@@ -5,6 +5,7 @@ var async = require('async');
 var AWS = require('aws-sdk');
 var Redis = require('ioredis');
 var errors = require('errors');
+var once = require('once');
 var diff = require('deep-object-diff').diff;
 var mongoose = require('mongoose');
 var uuidv4 = require('uuid/v4');
@@ -52,6 +53,8 @@ var findModelUpdatesQueueUrl = function (done) {
     done(null, modelUpdatesQueueUrl);
   });
 };
+
+exports.once = once;
 
 exports.none = function () {
 

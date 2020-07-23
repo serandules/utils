@@ -14,6 +14,7 @@
     "bcrypt": "2.0.1",
     "async": "1.*",
     "uuid": "3.3.3",
+    "once": "1.4.0",
     "string-template": "1.0.0",
     "deep-object-diff": "1.1.0",
     "json-stringify-safe": "5.0.1",
