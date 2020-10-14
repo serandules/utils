@@ -13,8 +13,6 @@ var stringify = require('json-stringify-safe');
 var _ = require('lodash');
 var format = require('string-template');
 
-var Workflows = require('model-workflows');
-
 var env = nconf.get('ENV');
 
 var SALT_WORK_FACTOR = 10;
@@ -303,12 +301,42 @@ exports.findGroup = function (user, name, done) {
   });
 };
 
+exports.module = function (name) {
+  var models = require('models');
+  return models[name];
+};
+
+exports.model = function (name) {
+  var module = exports.module(name);
+  if (!module) {
+    return null;
+  }
+  return module.model;
+};
+
+exports.service = function (name) {
+  var module = exports.module(name);
+  if (!module) {
+    return null;
+  }
+  return module.service;
+};
+
+exports.method = function (name, method) {
+  var module = exports.module(name);
+  if (!module) {
+    return null;
+  }
+  return module[method];
+};
+
 exports.findWorkflow = function (user, name, done) {
   var o = workflows[user] || (workflows[user] = {});
   var workflow = o[name];
   if (workflow) {
     return done(null, workflow);
   }
+  var Workflows = exports.model('workflows');
   Workflows.findOne({user: user, name: name}, function (err, workflow) {
     if (err) {
       return done(err)
